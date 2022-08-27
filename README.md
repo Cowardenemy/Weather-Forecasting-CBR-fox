@@ -1,54 +1,37 @@
-# WeatherForecasting
+# CBR-fox
+A generic post-hoc **C**ase **B**ased **R**easoning method for the e**X**planation of time-series **FO**recasting
 
-This task is to explain a regression model that predicts weather variables: air pressure, temperature and hummidity
+## Installation of necessary modules
+Can be installed through the **"requirements.txt"** file using the command:
+```
+pip install -r requirements.txt
+```
+This will install the following modules:
 
-## Weather Forecasting Model
+- pandas
+- numpy
+- scipy
+- statsmodels
+- matplotlib
+- tensorflow
 
-The weather forecasting model is a neural network applied to temporal series. I takes as input several variables related to min, average and max values of temperature, humidity and pressure. This model uses **Long Short-Term Memory (LSTM)** networks, thar are a type of recurrent neural network capable of learning order dependence in sequence prediction problems. 
+## Repository content
+It has the following directories:
 
-### Data
+- CBR-fox - Jupyter Notebook: This stores the jupyter notebook.
+- CBR-fox - Script: This stores the script.
+  
+Both of them with their respective execution instructions.
+ 
+## Online notebook
 
-Dataset includes real daily measures of weather conditions from 2000 to 2018. A total of 6848 records. Each record contains the following variables:
-* Min temperature, humidity and pressure
-* Average temperature, humidity and pressure
-* Max temperature, humidity and pressure
+You can also run CBR-fox virtually using Google Colab.
 
-![Head if the dataset](img/dataset.png)
+[CBR-fox - Google Colab](https://colab.research.google.com/drive/1q628VQ03lQpckgY3u9aWs0OBoliQQr2k?usp=sharing)
 
-![Global plot of the dataset](img/globaldata.png)
+## Video demo
 
+Here, at the link bellow, you can find a video demo of IREX
 
-### The Black-box
-
-The black box model is a **Long Short-Term Memory (LSTM)** network. Data is split into 14-days sequences, and the provided configuration estimates temperature from the other variables. However, this setup cam be modified by participants.
-
-![RMSE of the model](img/rmse.png)
-
-
-## Explaining Weather Forcasting
-
-The challenge is to explain the prediction of the model, either by providing correlations to the input variables or by providing case-based explanations of previous episodes.
-
-Teams must define a target (independent) variable from the provided dataset (by default: average temperature). Then, provide explanation methods given a concrete date and the estimated value of the target variable. These explanations can be graphical (charts, images, etc.) or textual.
-
-Participants can either use existing explainer libraries or build their own explainers to generate explanations. 
-
-### Submission
-
-Participants can submit their code by creating a fork of this repository and. Once ready to submit, please submit a pull request.
-
-Each submission should consist of an explanation process that recieves a date to be prediced/explanained, plus serveral examples showing the resulting explanation for different dates.
-
-## Citation Request
-Please site following paper for this task:
-
-    @unknown{orozco2021,
-      author = {Orozco-del-Castillo, Mauricio and Valdiviezo-N, Juan and H., Jorge and Navarro, Saul},
-      year = {2021},
-      month = {08},
-      title = {Urban expansion and its impact on meteorological variables of the city of Merida, Mexico},
-      doi = {10.13140/RG.2.2.17652.48003}
-      }
-
-
+[CBR-fox - Video demo](https://aaaimx.org/cbr-fox/)
 
