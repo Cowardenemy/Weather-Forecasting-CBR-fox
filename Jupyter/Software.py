@@ -18,10 +18,30 @@ from keras.layers import Dense, LSTM, Dropout
 import matplotlib.pyplot as plt
 from sklearn.model_selection import TimeSeriesSplit
 
+from sktime.distances import (
+    dtw_distance,
+    ddtw_distance,
+    wdtw_distance,
+    msm_distance,
+    erp_distance,
+    lcss_distance,
+    twe_distance,
+    wddtw_distance,
+    edr_distance
+)
 
 # TODO Define all technique names
 # TODO Reorganize possible new methods for all new techniques
-# CCI (Combined Correlation Index)...
+# cci_distance (Combined Correlation Index)...
+# dtw_distance (Dynamic Timie Warping)
+# ddtw_distance,
+# wdtw_distance,
+# msm_distance,
+# erp_distance,
+# lcss_distance,
+# twe_distance,
+# wddtw_distance,
+# edr_distance
 class cbrFox:
     def __init__(self, windows=None, target=None, targetWindow=None, num_cases=10, smoothnessFactor=.03,
                  inputNames=None,
@@ -59,6 +79,8 @@ class cbrFox:
         self.analysisReport = None
 
     def explain(self):
+        # TWE = np.array(([twe_distance(targetWindow[:,currentComponent],windows[currentWindow,:,currentComponent])for currentWindow in range(windowsLen) for currentComponent in range(componentsLen)]))
+        #print("WDDTW")
         if (self.method == "CCI"):
             print("Calculando correlación de Pearson")
             self.pearsonCorrelation = np.array(
@@ -83,7 +105,7 @@ class cbrFox:
             normalizedCorrelation = (.5 + (self.pearsonCorrelation - 2 * normalizedEuclideanDistance + 1) / 4)
 
             self.correlationPerWindow = np.sum(((normalizedCorrelation + self.punishedSumFactor) ** 2), axis=1)
-
+            # Applying scale
             self.correlationPerWindow /= max(self.correlationPerWindow)
 
             print("Aplicando el algoritmo LOWESS")
@@ -135,6 +157,26 @@ class cbrFox:
                  "MAE.1": self.worstMAE}
             self.analysisReport = pd.DataFrame(data=d)
 
+    # New methods for version 1.1
+    def smoothe(self):
+        self.smoothedCorrelation = lowess(self.correlationPerWindow, np.arange(len(self.correlationPerWindow)),
+                                          self.smoothnessFactor)[:, 1]
+
+    def extract_valleys_peaks_indexes(self):
+        self.valleyIndex, self.peakIndex = signal.argrelextrema(self.smoothedCorrelation, np.less)[0], \
+            signal.argrelextrema(self.smoothedCorrelation, np.greater)[0]
+
+    def retreive_concave_convex_segments(self):
+        self.concaveSegments = np.split(
+            np.transpose(np.array((np.arange(self.windowsLen), self.correlationPerWindow))),
+            self.valleyIndex)
+    def retreive_original_indexes(self):
+        for split in self.concaveSegments:
+            self.bestWindowsIndex.append(int(split[np.where(split == max(split[:, 1]))[0][0], 0]))
+        for split in self.convexSegments:
+            self.worstWindowsIndex.append(int(split[np.where(split == min(split[:, 1]))[0][0], 0]))
+
+    # End of new methods for version 1.1
     def visualizeCorrelationPerWindow(self):
         plt.figure(figsize=(17, 7))
         plt.plot(self.correlationPerWindow)
