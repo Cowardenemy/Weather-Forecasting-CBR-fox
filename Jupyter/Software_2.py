@@ -11,6 +11,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 import matplotlib.pyplot as plt
 from sklearn.model_selection import TimeSeriesSplit
+from deprecated import deprecated
 
 from sktime.distances import (
     dtw_distance,
@@ -264,6 +265,8 @@ class sktime_distance_comparison:
         plt.show()
 
 
+    @deprecated(version='1.2.0', reason="If a selected window either best or worst, has an index position"
+                                        "close to the end, there will not be further predictions to plot")
     def visualizeBestHistoryPredictions(self, figsize):
         fig, axs = plt.subplots(self.outputComponentsLen, figsize=figsize)
 
@@ -283,6 +286,8 @@ class sktime_distance_comparison:
         plt.show()
 
 
+    @deprecated(version='1.2.0', reason="If a selected window either best or worst, has an index position"
+                                        "close to the end, there will not be further predictions to plot")
     def visualizeWorstHistoryPredictions(self, figsize):
         fig, axs = plt.subplots(self.outputComponentsLen, figsize=figsize)
 
