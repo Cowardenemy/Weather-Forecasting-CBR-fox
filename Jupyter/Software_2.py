@@ -6,6 +6,8 @@ from scipy import signal
 import statsmodels.api as sm
 from sklearn.preprocessing import MinMaxScaler
 from statsmodels.nonparametric.smoothers_lowess import lowess
+from copy import deepcopy
+
 from cci_distance import cci_distance
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
@@ -73,7 +75,7 @@ class sktime_distance_comparison:
         # Added for the version 1.1
         self.method = method
         self.analysisReport = None
-
+        self.dataframes = []
 
     # New methods for version 1.1
     def process(self):
@@ -83,16 +85,13 @@ class sktime_distance_comparison:
         self.retreive_original_indexes()
         self.determine_dicts()
 
-
     def smoothe(self):
         self.smoothedCorrelation = lowess(self.correlationPerWindow, np.arange(len(self.correlationPerWindow)),
                                           self.smoothnessFactor)[:, 1]
 
-
     def extract_valleys_peaks_indexes(self):
         self.valleyIndex, self.peakIndex = signal.argrelextrema(self.smoothedCorrelation, np.less)[0], \
             signal.argrelextrema(self.smoothedCorrelation, np.greater)[0]
-
 
     def retreive_concave_convex_segments(self):
         self.concaveSegments = np.split(
@@ -102,13 +101,11 @@ class sktime_distance_comparison:
             np.transpose(np.array((np.arange(self.windowsLen), self.correlationPerWindow))),
             self.peakIndex)
 
-
     def retreive_original_indexes(self):
         for split in self.concaveSegments:
             self.bestWindowsIndex.append(int(split[np.where(split == max(split[:, 1]))[0][0], 0]))
         for split in self.convexSegments:
             self.worstWindowsIndex.append(int(split[np.where(split == min(split[:, 1]))[0][0], 0]))
-
 
     def determine_dicts(self):
         self.bestDic = {index: self.correlationPerWindow[index] for index in self.bestWindowsIndex}
@@ -142,7 +139,6 @@ class sktime_distance_comparison:
              "MAE.1": self.worstMAE}
         self.analysisReport = pd.DataFrame(data=d)
 
-
     # End of new methods for version 1.1
 
     def explain(self):
@@ -154,7 +150,6 @@ class sktime_distance_comparison:
                                                      self.targetWindow, self.windowsLen,
                                                      self.componentsLen, self.punishedSumFactor)
         if (self.method == "DTW"):
-
             self.correlationPerWindow = np.array(([dtw_distance(self.targetWindow[:, currentComponent],
                                                                 self.windows[currentWindow, :, currentComponent])
                                                    for currentWindow in range(self.windowsLen)
@@ -188,27 +183,27 @@ class sktime_distance_comparison:
             self.correlationPerWindow /= max(self.correlationPerWindow)
         if (self.method == "TWE"):
             self.correlationPerWindow = np.array(([twe_distance(self.targetWindow[:, currentComponent],
-                                                                 self.windows[currentWindow, :, currentComponent])
+                                                                self.windows[currentWindow, :, currentComponent])
                                                    for currentWindow in range(self.windowsLen)
                                                    for currentComponent in range(self.componentsLen)])).reshape(-1,
-                                                                                                              self.componentsLen)
+                                                                                                                self.componentsLen)
             self.correlationPerWindow = np.sum(self.correlationPerWindow, axis=1)
             self.correlationPerWindow /= max(self.correlationPerWindow)
         if (self.method == "EDR"):
             self.correlationPerWindow = np.array(([edr_distance(self.targetWindow[:, currentComponent],
-                                                                     self.windows[currentWindow, :,
-                                                                     currentComponent])
-                                                       for currentWindow in range(self.windowsLen)
-                                                       for currentComponent in range(self.componentsLen)])).reshape(-1,
-                                                                                                                    self.componentsLen)
+                                                                self.windows[currentWindow, :,
+                                                                currentComponent])
+                                                   for currentWindow in range(self.windowsLen)
+                                                   for currentComponent in range(self.componentsLen)])).reshape(-1,
+                                                                                                                self.componentsLen)
             self.correlationPerWindow = np.sum(self.correlationPerWindow, axis=1)
             self.correlationPerWindow /= max(self.correlationPerWindow)
         if (self.method == "LCSS"):
             self.correlationPerWindow = np.array(([lcss_distance(self.targetWindow[:, currentComponent],
-                                                             self.windows[currentWindow, :, currentComponent])
-                                               for currentWindow in range(self.windowsLen)
-                                               for currentComponent in range(self.componentsLen)])).reshape(-1,
-                                                                                                            self.componentsLen)
+                                                                 self.windows[currentWindow, :, currentComponent])
+                                                   for currentWindow in range(self.windowsLen)
+                                                   for currentComponent in range(self.componentsLen)])).reshape(-1,
+                                                                                                                self.componentsLen)
             self.correlationPerWindow = np.sum(self.correlationPerWindow, axis=1)
             self.correlationPerWindow /= max(self.correlationPerWindow)
 
@@ -221,12 +216,22 @@ class sktime_distance_comparison:
 
         self.process()
 
+    def explain_all(self, methods):
+        # Create a Pandas Excel writer using openpyxl as the engine
+        with pd.ExcelWriter('output.xlsx', engine='openpyxl') as writer:
+            # Write each dataframe to a different sheet
+            for method in methods:
+                print("Processing method {}".format(method))
+                self.method = method
+                self.explain()
+                print("Exploring method {}".format(method))
+                self.dataframes.append(deepcopy(self.analysisReport))
+                self.dataframes[-1].to_excel(writer, sheet_name=str(method), index=False)
 
     def visualizeCorrelationPerWindow(self):
         plt.figure(figsize=(17, 7))
         plt.plot(self.correlationPerWindow)
         plt.show()
-
 
     def visualizeSmoothedCorrelation(self):
         plt.figure(figsize=(17, 7))
@@ -234,7 +239,6 @@ class sktime_distance_comparison:
         plt.scatter(self.peakIndex, [self.smoothedCorrelation[peak] for peak in self.peakIndex])
         plt.scatter(self.valleyIndex, [self.smoothedCorrelation[valley] for valley in self.valleyIndex])
         plt.show()
-
 
     def visualizeBestCases(self, figsize):
         fig, axs = plt.subplots(self.componentsLen, figsize=figsize)
@@ -251,7 +255,6 @@ class sktime_distance_comparison:
             axs[n_component].legend()
         plt.show()
 
-
     def visualizeWorstCases(self, figsize):
         fig, axs = plt.subplots(self.componentsLen, figsize=figsize)
 
@@ -263,7 +266,6 @@ class sktime_distance_comparison:
             axs[n_component].plot(self.targetWindow[:, n_component], "--", label="Caso de estudio")
             axs[n_component].legend()
         plt.show()
-
 
     @deprecated(version='1.2.0', reason="If a selected window either best or worst, has an index position"
                                         "close to the end, there will not be further predictions to plot")
@@ -285,7 +287,6 @@ class sktime_distance_comparison:
             axs[n_component].legend()
         plt.show()
 
-
     @deprecated(version='1.2.0', reason="If a selected window either best or worst, has an index position"
                                         "close to the end, there will not be further predictions to plot")
     def visualizeWorstHistoryPredictions(self, figsize):
@@ -305,7 +306,6 @@ class sktime_distance_comparison:
             axs[n_component].legend()
         plt.show()
 
-
     def visualizeBestCasePredictions(self):
         plt.figure(figsize=(20, 5))
         plt.ylim((0, 100))
@@ -316,7 +316,6 @@ class sktime_distance_comparison:
         plt.plot(self.predictionTargetWindow.reshape(-1, 1), "--", label="Resultados de predicción")
         plt.show()
 
-
     def visualizeWorstCasePredictions(self):
         plt.figure(figsize=(20, 5))
         plt.ylim((0, 100))
@@ -326,6 +325,20 @@ class sktime_distance_comparison:
         plt.plot(self.predictionTargetWindow.reshape(-1, 1), "--", label="Resultados de predicción")
         plt.show()
 
-
     def getAnalysisreport(self):
         return self.analysisReport
+
+
+# Method that receives a list of techniques and creates an instance for each one and returns a kind of dictionary
+def explain_methods(windows, targetWindow, target, prediction, num_cases, smoothnessFactor, inputNames, outputNames,
+                    punishedSumFactor, methods):
+    dictionary = {}
+    for method in methods:
+        instance = sktime_distance_comparison(windows=windows, targetWindow=targetWindow, target=target,
+                                              prediction=prediction,
+                                              num_cases=num_cases, smoothnessFactor=smoothnessFactor,
+                                              inputNames=inputNames, outputNames=outputNames,
+                                              punishedSumFactor=punishedSumFactor, method=method)
+        instance.explain()
+        dictionary[method] = instance
+    return dictionary
