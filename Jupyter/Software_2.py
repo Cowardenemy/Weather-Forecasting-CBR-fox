@@ -240,18 +240,18 @@ class sktime_distance_comparison:
         plt.scatter(self.valleyIndex, [self.smoothedCorrelation[valley] for valley in self.valleyIndex])
         plt.show()
 
-    def visualizeBestCases(self, figsize):
-        fig, axs = plt.subplots(self.componentsLen, figsize=figsize)
+    def visualizeBestCasesPerFeature(self, figsize, features_indices):
+        fig, axs = plt.subplots(len(features_indices), figsize=figsize)
 
         # COMIENZA CÓDIGO ORIGINAL
-        for n_component in range(self.componentsLen):
+        for n_component, feature_index in enumerate(features_indices):
 
-            axs[n_component].set_title(self.inputNames[n_component])
+            axs[n_component].set_title(self.inputNames[feature_index])
             axs[n_component].set_ylim((0, 115))
             for i, tupla in enumerate(self.bestSorted):
-                axs[n_component].plot(self.windows[tupla[0]][:, n_component], label="Caso " + str(i))
+                axs[n_component].plot(self.windows[tupla[0]][:, feature_index], label="Case " + str(i + 1))
 
-            axs[n_component].plot(self.targetWindow[:, n_component], "--", label="Caso de estudio")
+            axs[n_component].plot(self.targetWindow[:, feature_index], "--", label="Query case")
             axs[n_component].legend()
         plt.show()
 
@@ -286,6 +286,44 @@ class sktime_distance_comparison:
                                      label="Predicción del caso de estudio")
             axs[n_component].legend()
         plt.show()
+
+    def compareBestCases(self, figsize):
+        fig, axs = plt.subplots(len(self.inputNames), figsize=figsize)
+
+        for feature in range(len(self.inputNames)):
+            # Processing all case values per feature
+            axs[feature].set_title(self.inputNames[feature])
+            axs[feature].set_ylim((0, 115))
+            # Process all feature values per each column/feature
+            # Values represent the case index, in this case, the best case's indices
+            counter = 1
+            for values in self.bestSorted:
+
+                axs[feature].plot(self.windows[values[0]][:,feature], label="Case " + str(counter))
+                counter += 1
+            axs[feature].plot(self.targetWindow[:,feature], label="Real case")
+            axs[feature].legend()
+
+        plt.show()
+
+    # def compareBestCasesPredictions(self, figsize):
+    #     fig, axs = plt.subplots(self.outputComponentsLen, figsize=figsize)
+    #
+    #     for feature in range(self.outputComponentsLen):
+    #         # Processing all case values per feature
+    #         axs[feature].set_title(self.outputNames[feature])
+    #         axs[feature].set_ylim((0, 115))
+    #         # Process all feature values per each column/feature
+    #         # Values represent the case index, in this case, the best case's indices
+    #         counter = 1
+    #         for values in self.bestSorted:
+    #
+    #             axs[feature].plot(self.windows[values[0]][:,feature], label="Case " + str(counter))
+    #             counter += 1
+    #         axs[feature].plot(self.targetWindow[:,feature], label="Real case")
+    #         axs[feature].legend()
+    #
+    #     plt.show()
 
     @deprecated(version='1.2.0', reason="If a selected window either best or worst, has an index position"
                                         "close to the end, there will not be further predictions to plot")
